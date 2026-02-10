@@ -1,0 +1,2 @@
+# aether
+A Minecraft launcher.
