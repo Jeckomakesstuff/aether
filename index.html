@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Aether Client</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/skinview3d@3.0.0-alpha.1/bundles/skinview3d.bundle.js"></script>
+</head>
+<body>
+
+<div class="app-frame">
+    <div class="sidebar">
+        <div class="brand"><i class="fa-solid fa-cloud"></i></div>
+        <div class="nav-btn active" id="tab-home" onclick="switchTab('home')" title="Play"><i class="fa-solid fa-play"></i></div>
+        <div class="nav-btn" id="tab-addons" onclick="switchTab('addons')" title="Addons"><i class="fa-solid fa-puzzle-piece"></i></div>
+        <div class="nav-btn" id="tab-instances" onclick="switchTab('instances')" title="Profiles"><i class="fa-solid fa-folder-tree"></i></div>
+        <div class="nav-btn" id="tab-mods" onclick="switchTab('mods')" title="Mods"><i class="fa-solid fa-layer-group"></i></div>
+        <div class="nav-btn" id="tab-packs" onclick="switchTab('packs')" title="Packs"><i class="fa-solid fa-palette"></i></div>
+        <div class="nav-btn" id="tab-media" onclick="switchTab('media')" title="Media"><i class="fa-solid fa-images"></i></div>
+        <div class="nav-btn" id="tab-settings" onclick="switchTab('settings')" title="Settings"><i class="fa-solid fa-sliders"></i></div>
+        <div style="flex:1"></div>
+        <div class="nav-btn" onclick="toggleConsole()"><i class="fa-solid fa-terminal"></i></div>
+    </div>
+
+    <div class="content">
+        <div class="top-bar">
+            <div class="window-controls" style="display:flex; gap:10px;">
+                <div class="win-btn" onclick="window.close()"><i class="fa-solid fa-minus"></i></div>
+                <div class="win-btn close" onclick="window.close()"><i class="fa-solid fa-xmark"></i></div>
+            </div>
+        </div>
+
+        <div id="view-home" class="view active">
+            <div class="home-container">
+                <canvas id="skin-container"></canvas>
+                <h1 class="launcher-title">AETHER</h1>
+                <div id="active-instance-label" style="font-size:14px; letter-spacing:4px; color:var(--text-dim); text-transform:uppercase; margin-top:10px;">READY</div>
+            </div>
+            
+            <div class="dock">
+                <div class="user-block" onclick="openAccountModal()" style="cursor: pointer;">
+                    <img src="https://mc-heads.net/avatar/Steve/50" class="user-avatar" id="user-head">
+                    <div class="user-text"><div class="user-name" id="username">Guest</div><div class="user-status" id="user-status">Offline</div></div>
+                </div>
+                <div style="width:1px; height:40px; background:rgba(255,255,255,0.1);"></div>
+                <div class="custom-select-container">
+                    <div class="select-sub">VERSION</div>
+                    <div class="select-trigger" onclick="toggleVersionMenu()">
+                        <span class="select-value" id="current-version">...</span><i class="fa-solid fa-chevron-up" style="font-size:10px;"></i>
+                    </div>
+                    <div class="select-options" id="version-menu"></div>
+                </div>
+                <div style="width:1px; height:40px; background:rgba(255,255,255,0.1);"></div>
+                <button id="play-btn">LAUNCH</button>
+            </div>
+        </div>
+
+        <div id="view-addons" class="view">
+            <h1 class="section-title">Aether Addons</h1>
+            <p style="color:var(--text-dim);">Toggle to install.</p>
+            <div class="settings-grid" id="addons-grid"></div>
+        </div>
+
+        <div id="view-instances" class="view">
+            <h1 class="section-title">Profiles</h1>
+            <div style="display:flex; gap:15px; flex-wrap:wrap;" id="instance-grid"></div>
+            <button class="win-btn" style="position:fixed; bottom:30px; right:30px; width:50px; height:50px; border-radius:25px; background:var(--accent); color:white; font-size:24px; box-shadow:0 10px 30px rgba(0,0,0,0.5);" onclick="openCreateModal()">+</button>
+        </div>
+
+        <div id="view-mods" class="view">
+            <h1 class="section-title">Mod Manager</h1>
+            <div class="mod-toolbar">
+                <input type="text" id="mod-search" class="search-input" placeholder="Search...">
+                <button class="win-btn" style="background:var(--accent); color:white; width:auto; padding:0 15px;" onclick="searchMods()">SEARCH</button>
+                <div class="action-btn" onclick="openModFolder()"><i class="fa-solid fa-folder-open"></i></div>
+            </div>
+            <div class="mod-list" id="mod-list-container"></div>
+        </div>
+
+        <div id="view-packs" class="view">
+            <h1 class="section-title">Resource Packs</h1>
+            <div class="mod-toolbar">
+                <input type="text" id="pack-search" class="search-input" placeholder="Search...">
+                <button class="win-btn" style="background:var(--accent); color:white; width:auto; padding:0 15px;" onclick="searchPacks()">SEARCH</button>
+                <div class="action-btn" onclick="openPackFolder()"><i class="fa-solid fa-folder-open"></i></div>
+            </div>
+            <div class="media-grid" id="pack-grid"></div>
+        </div>
+
+        <div id="view-media" class="view">
+            <h1 class="section-title">Media</h1>
+            <div class="mod-toolbar">
+                <button class="win-btn" style="background:rgba(255,255,255,0.1); color:white; width:auto; padding:0 15px;" onclick="loadScreenshots()">REFRESH</button>
+                <div class="action-btn" onclick="openScreenshotFolder()"><i class="fa-solid fa-folder-open"></i></div>
+            </div>
+            <div class="media-grid" id="media-grid"></div>
+        </div>
+
+        <div id="view-settings" class="view">
+            <h1 class="section-title">Settings</h1>
+            <div class="settings-grid">
+                <div class="setting-card">
+                    <h3 style="margin-top:0; color:var(--accent);">Appearance</h3>
+                    <div style="display:flex; gap:10px;">
+                        <div class="theme-swatch" style="background:#3b82f6;" onclick="setTheme('#3b82f6', this)"></div>
+                        <div class="theme-swatch" style="background:#ef4444;" onclick="setTheme('#ef4444', this)"></div>
+                        <div class="theme-swatch" style="background:#22c55e;" onclick="setTheme('#22c55e', this)"></div>
+                        <div class="theme-swatch" style="background:#a855f7;" onclick="setTheme('#a855f7', this)"></div>
+                        <div class="theme-swatch" style="background:#eab308;" onclick="setTheme('#eab308', this)"></div>
+                    </div>
+                </div>
+                <div class="setting-card">
+                    <h3 style="margin-top:0; color:var(--accent);">Config</h3>
+                    <div class="control-group">
+                        <div class="label-row"><span class="label">RAM</span><span class="value" id="ram-text">4096 MB</span></div>
+                        <input type="range" id="ram-slider" min="1024" max="16384" step="512" value="4096">
+                    </div>
+                    <div class="control-group toggle-row"><span class="label">Fabric</span><div class="toggle-switch active" id="toggle-fabric"></div></div>
+                    <div class="control-group toggle-row"><span class="label">Velocity</span><div class="toggle-switch" id="toggle-velocity"></div></div>
+                </div>
+                <div class="setting-card hover-action" onclick="openLegalModal()">
+                    <h3 style="margin-top:0;">Legal</h3><p style="font-size:12px; color:#888;">Privacy & Terms</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="account-modal">
+    <div class="modal-box">
+        <div class="modal-title">Accounts</div>
+        <div id="account-list" style="max-height:200px; overflow-y:auto; margin-bottom:20px;"></div>
+        <button class="btn-confirm" style="width:100%;" onclick="addAccount()">+ Add</button>
+        <button class="btn-cancel" style="width:100%; margin-top:10px;" onclick="closeAccountModal()">Close</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="create-modal">
+    <div class="modal-box">
+        <div class="modal-title">Create Profile</div>
+        <input type="text" id="new-inst-name" class="code-input" placeholder="Name">
+        <input type="text" id="new-inst-ver" class="code-input" placeholder="Version (1.21.4)">
+        <div class="modal-actions"><button class="btn-cancel" onclick="closeCreateModal()">Cancel</button><button class="btn-confirm" onclick="submitCreateInstance()">Create</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="legal-modal">
+    <div class="modal-box" style="width:500px;">
+        <div class="modal-title">Legal</div>
+        <p style="font-size:13px; color:#ccc;">Not affiliated with Mojang. Tokens stored locally.</p>
+        <button class="btn-confirm" style="width:100%; margin-top:20px;" onclick="closeLegalModal()">OK</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="lightbox-modal" onclick="closeLightbox(event)">
+    <div class="lightbox-content">
+        <img id="lightbox-img" src="">
+        <div class="lightbox-bar">
+            <span id="lightbox-name">img</span>
+            <button class="btn-confirm" style="background:#ef4444;" onclick="deleteCurrentScreenshot()">DELETE</button>
+        </div>
+    </div>
+</div>
+
+<div id="console-overlay" style="display:none; position:fixed; top:40px; right:20px; width:500px; height:400px; background:#000; border:1px solid #333; z-index:2000; flex-direction:column; box-shadow:0 10px 50px rgba(0,0,0,0.8); border-radius:8px;">
+    <div style="background:#111; padding:5px 10px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-family:monospace; font-size:12px; color:#aaa;">DEVELOPER CONSOLE</span>
+        <i class="fa-solid fa-xmark" style="cursor:pointer; color:#aaa;" onclick="toggleConsole()"></i>
+    </div>
+    <div id="console-output" style="flex:1; padding:10px; overflow-y:auto; font-family:monospace; font-size:11px; color:#0f0; white-space:pre-wrap;"></div>
+</div>
+
+<script>
+    const { ipcRenderer } = require('electron');
+    let currentSettings = {};
+    let skinViewer;
+    let currentScreenshot = null;
+
+    const ADDON_META = {
+        "zoom": { name: "Zoom", icon: "fa-magnifying-glass", desc: "Essential Zoom." },
+        "fullbright": { name: "Fullbright", icon: "fa-sun", desc: "See in the dark." },
+        "physics": { name: "Physics", icon: "fa-explosion", desc: "Ragdolls & blocks." },
+        "3dskin": { name: "3D Skin", icon: "fa-user", desc: "Depth for skins." },
+        "mousetweaks": { name: "Mouse Tweaks", icon: "fa-arrow-pointer", desc: "Inventory management." },
+        "appleskin": { name: "AppleSkin", icon: "fa-apple-whole", desc: "Food saturation." },
+        "iris": { name: "Shaders", icon: "fa-eye", desc: "Iris Shaders support." }
+    };
+
+    window.onload = async () => {
+        try {
+            // Parallel Load for Speed
+            initSkinViewer();
+            await refreshInstances();
+            updateUI(); // Async update, don't await
+            
+            const user = await ipcRenderer.invoke('check-login');
+            if(user) setUserUI(user);
+        } catch(e) { console.error(e); }
+    };
+
+    async function updateUI() {
+        const s = await ipcRenderer.invoke('get-settings');
+        currentSettings = s;
+        document.getElementById('current-version').innerText = s.version;
+        document.getElementById('ram-slider').value = s.memory || 4096;
+        document.getElementById('ram-text').innerText = (s.memory || 4096) + " MB";
+        
+        if(s.themeColor) setTheme(s.themeColor);
+        setToggleState('toggle-fabric', s.modLoader === 'fabric');
+        setToggleState('toggle-velocity', s.velocityMode === true);
+        
+        // Defer Version Dropdown (Non-Blocking)
+        loadVersionsDropdown(s.version);
+        loadAddons();
+    }
+
+    async function loadVersionsDropdown(currentVer) {
+        // This is now decoupled from the main thread
+        const menu = document.getElementById('version-menu');
+        menu.innerHTML = "<div style='padding:10px; color:#777;'>Loading...</div>";
+        const versions = await ipcRenderer.invoke('get-versions');
+        menu.innerHTML = ""; 
+        versions.forEach(v => {
+            if(v.type === 'release') {
+                const div = document.createElement('div');
+                div.className = 'option';
+                if(v.id === currentVer) div.style.color = "var(--accent)";
+                div.innerHTML = `<div class="opt-title">${v.id}</div>`;
+                div.onclick = () => setVersion(v.id);
+                menu.appendChild(div);
+            }
+        });
+    }
+
+    function setVersion(id) {
+        document.getElementById('current-version').innerText = id;
+        document.getElementById('version-menu').classList.remove('open');
+        ipcRenderer.invoke('save-settings', { version: id });
+        updateUI();
+    }
+
+    // --- LOGIC BLOCKS ---
+    function initSkinViewer() {
+        if(skinViewer) return;
+        try {
+            skinViewer = new skinview3d.SkinViewer({
+                canvas: document.getElementById("skin-container"),
+                width: 300, height: 400, skin: "https://minotar.net/skin/Steve"
+            });
+            skinViewer.camera.position.set(-15, 10, 40);
+            skinViewer.animation = new skinview3d.IdleAnimation();
+            skinViewer.controls.enableZoom = false;
+        } catch(e) {}
+    }
+    function updateSkin(name) { if(skinViewer) skinViewer.loadSkin(`https://minotar.net/skin/${name}`); }
+
+    // --- INSTANCES ---
+    async function refreshInstances() {
+        const data = await ipcRenderer.invoke('get-instances');
+        const grid = document.getElementById('instance-grid');
+        grid.innerHTML = "";
+        data.list.forEach(inst => {
+            const isActive = inst.id === data.activeId;
+            const div = document.createElement('div');
+            div.className = "setting-card";
+            div.style = `width:200px; cursor:pointer; border-color:${isActive?'var(--accent)':'var(--border)'}; position:relative;`;
+            if(isActive) div.style.background="rgba(255,255,255,0.05)";
+            div.onclick = () => selectInstance(inst.id);
+            div.innerHTML = `<div style="font-weight:700; color:${isActive?'#fff':'#aaa'}">${inst.name}</div><div style="font-size:12px; color:var(--text-dim); margin-top:5px;">${inst.version}</div>${!isActive ? `<div class="action-btn delete" style="position:absolute; top:10px; right:10px; width:24px; height:24px;" onclick="event.stopPropagation(); deleteInstance('${inst.id}')"><i class="fa-solid fa-trash" style="font-size:10px;"></i></div>` : ''}`;
+            grid.appendChild(div);
+        });
+    }
+    async function selectInstance(id) { await ipcRenderer.invoke('select-instance', id); await refreshInstances(); await updateUI(); refreshMods(); }
+    async function deleteInstance(id) { if(confirm("Delete?")) { await ipcRenderer.invoke('delete-instance', id); await refreshInstances(); await updateUI(); } }
+
+    // --- ADDONS ---
+    async function loadAddons() {
+        const status = await ipcRenderer.invoke('get-addon-status');
+        const grid = document.getElementById('addons-grid');
+        grid.innerHTML = "";
+        for (const [key, meta] of Object.entries(ADDON_META)) {
+            const enabled = status[key] || false;
+            grid.innerHTML += `
+                <div class="setting-card" style="display:flex; align-items:center; justify-content:space-between; padding:15px;">
+                    <div style="display:flex; align-items:center;">
+                        <div class="card-icon" style="background:var(--bg-glass); width:35px; height:35px;"><i class="fa-solid ${meta.icon}" style="font-size:14px;"></i></div>
+                        <div><div style="font-weight:700;">${meta.name}</div><div style="font-size:11px; color:#666;">${meta.desc}</div></div>
+                    </div>
+                    <div class="toggle-switch ${enabled?'active':''}" onclick="toggleAddon('${key}', this)"></div>
+                </div>`;
+        }
+    }
+    async function toggleAddon(key, el) {
+        el.classList.toggle('active');
+        const res = await ipcRenderer.invoke('toggle-addon', { addonKey: key, enable: el.classList.contains('active') });
+        if(!res.success) { alert(res.msg); el.classList.toggle('active'); }
+    }
+
+    // --- HELPERS ---
+    window.switchTab=(t)=>{document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+t).classList.add('active');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+t).classList.add('active');if(t==='mods')refreshMods();if(t==='media')loadScreenshots();if(t==='addons')loadAddons()};
+    document.getElementById('play-btn').onclick=()=>{document.getElementById('play-btn').innerText="LAUNCHING..."; ipcRenderer.send('launch-game');};
+    ipcRenderer.on('game-closed',()=>document.getElementById('play-btn').innerText="LAUNCH");
+    const rs=document.getElementById('ram-slider'); rs.addEventListener('input',e=>document.getElementById('ram-text').innerText=e.target.value+" MB"); rs.addEventListener('change',e=>ipcRenderer.invoke('save-settings',{memory:e.target.value}));
+    function setTheme(c,el){document.documentElement.style.setProperty('--accent',c);document.documentElement.style.setProperty('--accent-dim',c+'33');ipcRenderer.invoke('save-settings',{themeColor:c});if(el){document.querySelectorAll('.theme-swatch').forEach(e=>e.classList.remove('active'));el.classList.add('active')}}
+    function setToggleState(id,s){const el=document.getElementById(id);if(s)el.classList.add('active');else el.classList.remove('active')}
+    document.getElementById('toggle-fabric').onclick=(e)=>{e.target.classList.toggle('active');ipcRenderer.invoke('save-settings',{modLoader:e.target.classList.contains('active')?"fabric":"vanilla"})};
+    document.getElementById('toggle-velocity').onclick=(e)=>{e.target.classList.toggle('active');ipcRenderer.invoke('save-settings',{velocityMode:e.target.classList.contains('active')})};
+    window.openAccountModal=async()=>{document.getElementById('account-modal').classList.add('open');const d=await ipcRenderer.invoke('get-accounts');const l=document.getElementById('account-list');l.innerHTML="";d.accounts.forEach(a=>{const is=a.uuid===d.selected;l.innerHTML+=`<div class="setting-card" style="padding:10px;display:flex;align-items:center;margin-bottom:10px;border-color:${is?'var(--accent)':'var(--border)'}"><img src="https://mc-heads.net/avatar/${a.uuid}/30" style="margin-right:10px;"><div style="flex:1;font-weight:600;${is?'color:#fff':'color:#888'}">${a.name}</div>${!is?`<button class="action-btn" onclick="switchAccount('${a.uuid}')">GO</button>`:''}<button class="action-btn delete" style="margin-left:5px;" onclick="removeAccount('${a.uuid}')"><i class="fa-solid fa-trash"></i></button></div>`})};
+    window.closeAccountModal=()=>document.getElementById('account-modal').classList.remove('open');
+    window.addAccount=async()=>{await ipcRenderer.invoke('login');openAccountModal();const u=await ipcRenderer.invoke('check-login');if(u)setUserUI(u)};
+    window.switchAccount=async(u)=>{await ipcRenderer.invoke('switch-account',u);openAccountModal();const n=await ipcRenderer.invoke('check-login');if(n)setUserUI(n)};
+    window.removeAccount=async(u)=>{await ipcRenderer.invoke('remove-account',u);openAccountModal()};
+    function setUserUI(n){document.getElementById('username').innerText=n;document.getElementById('user-status').innerText="Online";document.getElementById('user-status').style.color="var(--success)";document.getElementById('user-head').src=`https://mc-heads.net/avatar/${n}/50`;updateSkin(n)}
+    window.toggleVersionMenu=()=>document.getElementById('version-menu').classList.toggle('open');
+    document.addEventListener('click',e=>{if(!document.querySelector('.custom-select-container').contains(e.target))document.getElementById('version-menu').classList.remove('open')});
+    window.openCreateModal=()=>document.getElementById('create-modal').classList.add('open'); window.closeCreateModal=()=>document.getElementById('create-modal').classList.remove('open');
+    async function submitCreateInstance(){const n=document.getElementById('new-inst-name').value;const v=document.getElementById('new-inst-ver').value||"1.21.4";await ipcRenderer.invoke('create-instance',{name:n,version:v,modLoader:"fabric"});closeCreateModal();await refreshInstances();await updateUI();switchTab('instances')}
+    window.openLegalModal=()=>document.getElementById('legal-modal').classList.add('open'); window.closeLegalModal=()=>document.getElementById('legal-modal').classList.remove('open');
+    function toggleConsole(){const e=document.getElementById('console-overlay');e.style.display=e.style.display==='none'?'flex':'none'}; ipcRenderer.on('console-log',(e,m)=>{const o=document.getElementById('console-output');const d=document.createElement('div');d.innerText=m;if(m.includes('[ERR]'))d.style.color='#ff5555';else if(m.includes('[WARN]'))d.style.color='#eab308';o.appendChild(d);o.scrollTop=o.scrollHeight}); ipcRenderer.on('force-console',()=>document.getElementById('console-overlay').style.display='flex');
+    async function searchMods(){const q=document.getElementById('mod-search').value;const c=document.getElementById('mod-list-container');c.innerHTML="Searching...";const h=await ipcRenderer.invoke('search-modrinth',q);c.innerHTML="";h.forEach(x=>{c.innerHTML+=`<div class="setting-card" style="margin-bottom:10px;display:flex;align-items:center;"><img src="${x.icon_url||'https://cdn.modrinth.com/assets/logo.png'}" style="width:40px;height:40px;border-radius:8px;"><div style="margin-left:10px;flex:1"><div style="font-weight:700">${x.title}</div><div style="font-size:11px;color:#aaa">${x.description}</div></div><div class="action-btn" onclick="installMod('${x.project_id}',this)"><i class="fa-solid fa-download"></i></div></div>`})}
+    async function searchPacks(){const q=document.getElementById('pack-search').value;const g=document.getElementById('pack-grid');g.innerHTML="Searching...";const h=await ipcRenderer.invoke('search-resourcepacks',q);g.innerHTML="";h.forEach(x=>{g.innerHTML+=`<div class="media-card" style="aspect-ratio:1/1;"><img src="${x.icon_url||'https://cdn.modrinth.com/assets/logo.png'}" style="width:100%;height:80%;object-fit:cover;"><div class="media-caption" style="height:20%;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:10px;max-width:80px;overflow:hidden">${x.title}</span><i class="fa-solid fa-download" style="cursor:pointer" onclick="installPack('${x.project_id}',this)"></i></div></div>`})}
+    window.installMod=async(id,b)=>{b.innerHTML="...";await ipcRenderer.invoke('install-mod',id);b.innerHTML="✓"};
+    window.installPack=async(id,b)=>{b.className="fa-solid fa-spinner fa-spin";await ipcRenderer.invoke('install-resourcepack',id);b.className="fa-solid fa-check"};
+    window.openModFolder=()=>ipcRenderer.invoke('open-folder','mods'); window.openPackFolder=()=>ipcRenderer.invoke('open-folder','resourcepacks');
+    async function refreshMods(){const m=await ipcRenderer.invoke('get-local-mods');const c=document.getElementById('mod-list-container');c.innerHTML="";m.forEach(x=>{c.innerHTML+=`<div class="setting-card" style="margin-bottom:10px;display:flex;align-items:center;padding:10px;"><div style="flex:1;font-weight:600;">${x}</div><div class="action-btn delete" onclick="deleteMod('${x}')"><i class="fa-solid fa-trash"></i></div></div>`})}
+    window.deleteMod=async(f)=>{if(confirm("Delete?")){await ipcRenderer.invoke('delete-mod',f);refreshMods()}};
+    async function loadScreenshots(){const g=document.getElementById('media-grid');g.innerHTML="Loading...";const f=await ipcRenderer.invoke('get-screenshots');g.innerHTML="";if(f.length===0)g.innerHTML="<div style='color:#666;text-align:center;'>No media.</div>";f.forEach(x=>{ipcRenderer.invoke('get-screenshot-image',x.file).then(d=>{const div=document.createElement('div');div.className='media-card';div.style.backgroundImage=`url('${d}')`;div.onclick=()=>openLightbox(x.file,d);div.innerHTML=`<div class="media-caption">${x.file}</div>`;g.appendChild(div)})})}
+    function openLightbox(f,s){currentScreenshot=f;document.getElementById('lightbox-img').src=s;document.getElementById('lightbox-name').innerText=f;document.getElementById('lightbox-modal').classList.add('open')}
+    window.closeLightbox=(e)=>{if(e.target.id==='lightbox-modal')document.getElementById('lightbox-modal').classList.remove('open')};
+    window.deleteCurrentScreenshot=async()=>{if(confirm("Delete?")){await ipcRenderer.invoke('delete-screenshot',currentScreenshot);document.getElementById('lightbox-modal').classList.remove('open');loadScreenshots()}};
+    window.openScreenshotFolder=()=>ipcRenderer.invoke('open-folder','screenshots');
+</script>
+</body>
+</html>
